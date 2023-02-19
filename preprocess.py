@@ -7,7 +7,7 @@ nltk.download('punkt')
 
 def tokenise(string):
     extra_abbreviations = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r',
-                           's', 't', 'u', 'v', 'w', 'x', 'y', 'z', 'hon', 'gent', 'vol']
+                           's', 't', 'u', 'v', 'w', 'x', 'y', 'z', 'hon', 'gent', 'vol', 'col']
     # extra_abbreviations.append(list("abcdefghijklmnopqrstuvwxyz"))
 
     tokeniser = nltk.data.load('tokenizers/punkt/english.pickle')

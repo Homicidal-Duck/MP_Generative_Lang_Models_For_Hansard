@@ -1,5 +1,6 @@
 import preprocess
 import model
+import torch
 
 
 def main():
@@ -8,16 +9,26 @@ def main():
                  "S1V0015P0", "S1V0019P0", "S1V0020P0"]
 
     word_counts = {}
+    bigram_counts = {}
 
     for file in all_files:
         preprocessed = preprocess.xml_to_string(file)
-        word_counts = model.count_words(preprocessed, word_counts)
+        # word_counts = model.count_words(preprocessed, word_counts)
+        bigram_counts = model.count_bigrams(preprocessed, bigram_counts)
 
-    for w in sorted(word_counts, key=word_counts.get, reverse=True):
-        print(w + ' : ' + str(word_counts[w]))
+    #Build 2D dictionary
+    model.init_2D_dict(bigram_counts)
 
-    # for word, count in word_counts.items():
-    #     print(word + ":" + str(count))
+    # Print word counts to file
+    # word_count_file = open("output/word_counts.txt", "w")
+    # for w in sorted(word_counts, key=word_counts.get, reverse=True):
+    #     word_count_file.write(w + ' : ' + str(word_counts[w]))
+
+    # Print bigram counts to file
+    # bigram_count_file = open("output/bigram_counts.txt", "w")
+    # for w in sorted(bigram_counts, key=bigram_counts.get, reverse=True):
+    #     if(bigram_counts[w] > 3):
+    #         bigram_count_file.write(str(w) + ' : ' + str(bigram_counts[w]) + '\n')
 
 
 if __name__ == '__main__':
