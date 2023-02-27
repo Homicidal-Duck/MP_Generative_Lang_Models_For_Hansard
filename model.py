@@ -1,5 +1,8 @@
 import nltk
 import torch
+import json
+import os
+import glob
 
 
 def count_words(string, word_counts):
@@ -50,6 +53,12 @@ def dict2D_from_dict(bigram_counts):
 #     print(padded_tensor_bigrams)
 
 
+def build_model_files():
+    path = os.getcwd() + "/output/MP_contributions"
+    for cont_file in os.listdir(path):
+        print(cont_file)  # TODO set to draw bigram dicts from JSONs and create new JSONs for data
+
+
 def array_from_dict(bigram_counts):
     # Get indices from keys
     row_indices = list(set([k[0] for k in bigram_counts.keys()]))
@@ -65,3 +74,4 @@ def array_from_dict(bigram_counts):
         tensor_bigrams[row_index, col_index] = val
 
     return tensor_bigrams
+
