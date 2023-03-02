@@ -31,7 +31,7 @@ def process_strings(root):
 
     for n in root.iter("member"):
         if type(n.text) is str:
-            n.text = re.sub("[^a-zA-Z \n-]", "", n.text)
+            n.text = re.sub("[^a-zA-Z</> \n-]", "", n.text)
 
     for n in root.itertext():
         if hyphenated:
@@ -94,9 +94,10 @@ def remove_tags(tag_name, root):
 
 def write_contributions_to_file(contributions):
     for name, contribution_list in contributions.items():
-        with open("output/MP_contributions/" + name + ".json", "a") as file:
-            json.dump(contribution_list, file)
-            # todo opened as append, make sure to clear on first open
+        if len(name.split()) < 13 and len(contribution_list) > 2:
+            with open("output/MP_contributions/" + name + ".json", "w") as file:
+                json.dump(contribution_list, file)
+                # todo opened as append, make sure to clear on first open
 
 
 def append_contribution_to_dict(mp_name, mp_contribution, contributions):
@@ -198,6 +199,10 @@ def load_from_xml():
 
     for xml_file in os.listdir(os.getcwd() + "/xml"):
         all_files.append(xml_file)
+
+    # for xml_file in os.listdir(os.getcwd() + "/xml_test"):
+    #     all_files.append(xml_file)
+    # debug mode - fewer files to iterate through. todo add debug mode already good heavens
 
     for file in all_files:
         start_file = time.perf_counter()

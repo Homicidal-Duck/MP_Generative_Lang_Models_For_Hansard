@@ -38,14 +38,11 @@ def run_menu():
     print(f"{end - start:0.4f} seconds")
 
 
-
-
-
-def write_contributions_to_file(contributions):
-    for name, contribution_list in contributions.items():
-        if len(name.split()) < 13:
-            with open("output/MP_contributions/" + name + ".json", "w") as file:
-                json.dump(contribution_list, file)
+# def write_contributions_to_file(contributions):
+#     for name, contribution_list in contributions.items():
+#         if len(name.split()) < 13 and len(contribution_list) > 2:
+#             with open("output/MP_contributions/" + name + ".json", "w") as file:
+#                 json.dump(contribution_list, file)
 
 
 def main():
