@@ -1,3 +1,4 @@
+import contextlib
 import xml.etree.ElementTree as ET
 import re
 import nltk
@@ -92,7 +93,14 @@ def remove_tags(tag_name, root):
 #     print("diff = " + str(count - cont_count))
 
 
+def clear_contribution_files():
+    for file in os.listdir(os.getcwd() + "/output/MP_contributions"):
+        os.remove(os.getcwd() + "/output/MP_contributions/" + file)
+
+
 def write_contributions_to_file(contributions):
+    clear_contribution_files()
+
     for name, contribution_list in contributions.items():
         if len(name.split()) < 13 and len(contribution_list) > 2:
             with open("output/MP_contributions/" + name + ".json", "w") as file:
@@ -199,7 +207,7 @@ def load_from_xml():
 
     for xml_file in os.listdir(os.getcwd() + "/xml"):
         all_files.append(xml_file)
-
+    #
     # for xml_file in os.listdir(os.getcwd() + "/xml_test"):
     #     all_files.append(xml_file)
     # debug mode - fewer files to iterate through. todo add debug mode already good heavens
