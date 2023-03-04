@@ -105,7 +105,6 @@ def write_contributions_to_file(contributions):
         if len(name.split()) < 13 and len(contribution_list) > 2:
             with open("output/MP_contributions/" + name + ".json", "w") as file:
                 json.dump(contribution_list, file)
-                # todo opened as append, make sure to clear on first open
 
 
 def append_contribution_to_dict(mp_name, mp_contribution, contributions):

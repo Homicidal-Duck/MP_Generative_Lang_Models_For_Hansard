@@ -90,7 +90,7 @@ def main():
     # bigram_count_file = open("output/bigram_counts.txt", "w")
     # for w in sorted(bigram_counts, key=bigram_counts.get, reverse=True):
     #     if(bigram_counts[w] > 3):
-    #         bigram_count_file.write(str(w) + ' : ' + str(bigram_counts[w]) + '\n')
+    #     #         bigram_count_file.write(str(w) + ' : ' + str(bigram_counts[w]) + '\n')
 
 
 

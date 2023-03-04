@@ -2,7 +2,6 @@ import nltk
 import torch
 import json
 import os
-import glob
 
 
 def count_words(string, word_counts):
@@ -53,10 +52,38 @@ def dict2D_from_dict(bigram_counts):
 #     print(padded_tensor_bigrams)
 
 
+def clear_model_files():
+    for file in os.listdir(os.getcwd() + "/output/bigram_counts"):
+        os.remove(os.getcwd() + "/output/bigram_counts/" + file)
+
+
+# def strings_to_tuples():
+
+
+def tuples_to_strings(tuple_keys):  # TODO seems somewhat grossly inefficient - store as keys when first loading?
+    str_keys = {}
+    for tuple in tuple_keys:
+        str_keys[','.join(tuple)] = tuple_keys[tuple]
+    return str_keys
+
+
 def build_model_files():
-    path = os.getcwd() + "/output/MP_contributions"
+    path = os.getcwd() + "/output/MP_contributions/"
     for cont_file in os.listdir(path):
         print(cont_file)  # TODO set to draw bigram dicts from JSONs and create new JSONs for data
+        f = open(path + cont_file)
+        contributions = json.load(f)
+        bigram_counts = {}
+        for c in contributions:
+            bigram_counts = count_bigrams(c, bigram_counts)
+
+        bigram_counts = tuples_to_strings(bigram_counts)
+        with open("output/bigram_counts/" + cont_file, "w") as file:
+            json.dump(bigram_counts, file)  # TODO only store bigrams that appear more than n times
+                                            # todo sort on insert too
+
+        #     # word_counts = model.count_words(preprocessed, word_counts)
+        #     # bigram_counts = model.count_bigrams(preprocessed, bigram_counts)
 
 
 def array_from_dict(bigram_counts):
