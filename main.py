@@ -6,6 +6,11 @@ import model
 import json
 
 
+def clear_directory_files(path):
+    for file in os.listdir(path):
+        os.remove(path + "/" + file)
+
+
 def run_model():
     print("run model")
 
@@ -15,8 +20,9 @@ def run_menu():
     while invalid_choice:
         choice = input("\nPlease select an option:\n"
                        "1) Load MP contributions from XML\n"
-                       "2) Build model files\n"
-                       "3) Run model\n"
+                       "2) Get bigram counts\n"
+                       "3) Normalise bigram_counts\n"
+                       "4) Run model\n"
                        "q) Quit\n\n"
                        "> ")
         invalid_choice = False
@@ -25,8 +31,10 @@ def run_menu():
             case '1':
                 preprocess.load_from_xml()
             case '2':
-                model.build_model_files()
+                model.build_bigram_count_files()
             case '3':
+                model.build_normalised_files()
+            case '4':
                 run_model()
             case 'q':
                 print("quitting...")
