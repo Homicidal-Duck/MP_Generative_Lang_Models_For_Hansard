@@ -103,8 +103,8 @@ def tuples_to_strings(tuple_keys):  # Necessary as nltk's "bigrams" function out
 def write_counts_to_json(bigram_counts, filename):
     bigrams_to_write = {}
     for bigram in bigram_counts:
-        if bigram_counts[bigram] > 4:
-            bigrams_to_write[bigram] = bigram_counts[bigram]
+        # if bigram_counts[bigram] > 4: TODO do this more intelligently to avoid filename repeats
+        bigrams_to_write[bigram] = bigram_counts[bigram]
     # bigrams_sorted = tuples_to_strings(bigrams_sorted)
     bigrams_to_write_str = tuples_to_strings(bigrams_to_write)
     # bigrams_sorted = sorted(bigrams_to_write_str, key=bigrams_to_write_str.get, reverse=True)

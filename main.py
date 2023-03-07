@@ -1,4 +1,5 @@
 import os
+import random
 import time
 
 import preprocess
@@ -11,8 +12,39 @@ def clear_directory_files(path):
         os.remove(path + "/" + file)
 
 
+def generate_text(model_dict_str):
+    model_dict = model.strings_to_tuples(model_dict_str)
+    model_dict_2d = model.dict2D_from_dict(model_dict)
+
+    num_sentences = random.randint(1, 4)  # randomises the number of sentences to print
+    sentences_printed = 0
+    prev_word = "<cs>"
+    to_print = ""
+    while sentences_printed != num_sentences:
+        next_word_list = model_dict_2d[prev_word]
+        next_word_index = random.randint(0, min(4, len(next_word_list) - 1))
+        next_word = list(next_word_list.keys())[next_word_index]
+
+        if next_word != "<e>" and next_word != "<s>":
+            to_print += " " + next_word
+        elif next_word == "<e>":
+            to_print += "."
+            sentences_printed += 1
+        prev_word = next_word
+    print(to_print)
+
+
 def run_model():
-    print("run model")
+
+    invalid_choice = True
+    while invalid_choice:
+        mp = (input("Enter an MP to generate text\n> ") + ".json").lower()
+        model_path = os.getcwd() + "/output/normalised_counts/" + mp
+        if os.path.exists(model_path):
+            invalid_choice = False
+            f = open(model_path)
+            model_dict_str = json.load(f)
+            generate_text(model_dict_str)
 
 
 def run_menu():
