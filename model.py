@@ -78,6 +78,23 @@ def normalise_counts(bigram_counts):
     return normalised_counts
 
 
+def normalise_counts_2d(counts_2d):
+    # sum = 0
+    # for word_dict in counts_2d.values():
+    #
+    #     for count in list.values():
+    #         sum += count  # get sum of all values
+    #
+    #         normalised_counts = {}
+    #     for bigram, count in list.items():
+    #         normalised_counts[bigram] = count / sum  # get proportion of each value
+
+    normalised_counts_2d = {}
+    for ngram, word_dict in counts_2d.items():
+        normalised_counts_2d[ngram] = normalise_counts(word_dict)
+
+    return normalised_counts_2d
+
 def build_normalised_files():
     main.clear_directory_files(os.getcwd() + "/output/normalised_counts")
 

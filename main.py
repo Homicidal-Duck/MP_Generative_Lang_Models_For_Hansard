@@ -13,10 +13,13 @@ def clear_directory_files(path):
 
 
 def generate_text(model_dict_str):
+    start = time.perf_counter()
     model_dict = model.strings_to_tuples(model_dict_str)
     model_dict_2d = model.dict2D_from_dict(model_dict)
+    model_dict_2d = model.normalise_counts_2d(model_dict_2d)  # TODO MAKE WORK LOL
+    # print(model_dict_2d)
 
-    num_sentences = random.randint(1, 4)  # randomises the number of sentences to print
+    num_sentences = random.randint(1, 1)  # randomises the number of sentences to print
     sentences_printed = 0
     prev_word = "<cs>"
     to_print = ""
@@ -32,14 +35,16 @@ def generate_text(model_dict_str):
             sentences_printed += 1
         prev_word = next_word
     print(to_print)
-
+    end = time.perf_counter()
+    print(f"generated in {end - start:0.4f} seconds")
 
 def run_model():
 
     invalid_choice = True
     while invalid_choice:
         mp = (input("Enter an MP to generate text\n> ") + ".json").lower()
-        model_path = os.getcwd() + "/output/normalised_counts/" + mp
+        # model_path = os.getcwd() + "/output/normalised_counts/" + mp pre-normalised
+        model_path = os.getcwd() + "/output/bigram_counts/" + mp  # normalised at runtime
         if os.path.exists(model_path):
             invalid_choice = False
             f = open(model_path)
