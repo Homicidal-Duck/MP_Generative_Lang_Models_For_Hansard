@@ -131,8 +131,9 @@ def run_menu():
                        f"Current model: {model_type}\n"
                        "-------------------------\n"
                        "Please select an option:\n"  # TODO rework for trigram model
+                       "0) Change model type in use\n"
                        "1) Load MP contributions from XML\n"
-                       "2) Get ngram counts\n"
+                       "2) Get " + model_type + " counts\n"  # TODO change menu when providing options for NN
                        "3) Normalise bigram_counts\n"
                        "4) Run model\n"
                        "q) Quit\n\n"
