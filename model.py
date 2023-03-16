@@ -1,5 +1,5 @@
 import nltk
-import torch
+# import torch
 import json
 import os
 
@@ -13,13 +13,37 @@ def count_words(string, word_counts):
     return word_counts
 
 
-def count_bigrams(string, bigram_counts):
-    bigrams = list(nltk.bigrams(string.split()))
-    for bigram in bigrams:
-        num_occurrences = bigram_counts.get(bigram, 0)  # if the word is in the list, get its value, otherwise get 0
-        bigram_counts.update({bigram: num_occurrences + 1})
+def count_ngrams(string, ngram_counts, model_type):
+    match model_type:
+        case "bigram":
+            ngrams = list(nltk.bigrams(string.split()))
+        case "trigram":
+            ngrams = list(nltk.trigrams(string.split()))
+
+    for ngram in ngrams:
+        num_occurrences = ngram_counts.get(ngram, 0)  # if the word is in the list, get its value, otherwise get 0
+        ngram_counts.update({ngram: num_occurrences + 1})
     # print(*map(' '.join, bigrams), sep=', ')
-    return bigram_counts
+    return ngram_counts
+
+
+def dict3D_from_dict(trigram_counts):
+    trigram_3D_dict = {}
+    trigrams_sorted = sorted(trigram_counts, key=trigram_counts.get, reverse=True)
+    for trigram in trigrams_sorted:
+        trigram_3D_dict.update({trigram[0]: dict()})
+
+    for trigram in trigrams_sorted:
+        trigram_3D_dict.get(trigram[0]).update({trigram[1]: dict()})
+
+    for trigram in trigrams_sorted:
+        count = trigram_counts.get(trigram)
+        # first_dict = trigram_3D_dict.get(trigram[0])
+        # second_dict = first_dict.get(trigram[1])
+        # second_dict.update({trigram[2]: count})
+        trigram_3D_dict.get(trigram[0]).get(trigram[1]).update({trigram[2]: count})
+
+    return trigram_3D_dict
 
 
 def dict2D_from_dict(bigram_counts):
@@ -66,16 +90,26 @@ def strings_to_tuples(str_keys):
     return tuple_keys
 
 
-def normalise_counts(bigram_counts):
+def normalise_counts(ngram_counts):
     sum = 0
-    for count in bigram_counts.values():
+    for count in ngram_counts.values():
         sum += count  # get sum of all values
 
     normalised_counts = {}
-    for bigram, count in bigram_counts.items():
-        normalised_counts[bigram] = count / sum  # get proportion of each value
+    for ngram, count in ngram_counts.items():
+        normalised_counts[ngram] = count / sum  # get proportion of each value
 
     return normalised_counts
+
+
+def normalise_counts_3d(counts_3d):
+    normalised_counts_3d = {}
+    for first_word, first_word_dict in counts_3d.items():
+        normalised_counts_3d[first_word] = first_word_dict
+        for second_word, second_word_dict in first_word_dict.items():
+            normalised_counts_3d[first_word][second_word] = normalise_counts(second_word_dict)
+
+    return normalised_counts_3d
 
 
 def normalise_counts_2d(counts_2d):
@@ -90,12 +124,13 @@ def normalise_counts_2d(counts_2d):
     #         normalised_counts[bigram] = count / sum  # get proportion of each value
 
     normalised_counts_2d = {}
-    for ngram, word_dict in counts_2d.items():
-        normalised_counts_2d[ngram] = normalise_counts(word_dict)
+    for first_word, word_dict in counts_2d.items():
+        normalised_counts_2d[first_word] = normalise_counts(word_dict)
 
     return normalised_counts_2d
 
-def build_normalised_files():
+
+def build_normalised_files():  # Unnecessary? Don't think I'll use this
     main.clear_directory_files(os.getcwd() + "/output/normalised_counts")
 
     bigrams_path = os.getcwd() + "/output/bigram_counts/"
@@ -117,32 +152,45 @@ def tuples_to_strings(tuple_keys):  # Necessary as nltk's "bigrams" function out
     return str_keys
 
 
-def write_counts_to_json(bigram_counts, filename):
-    bigrams_to_write = {}
-    for bigram in bigram_counts:
+def write_counts_to_json(ngram_counts, filename, model_type):
+    ngrams_to_write = {}
+    for ngram in ngram_counts:
         # if bigram_counts[bigram] > 4: TODO do this more intelligently to avoid filename repeats
-        bigrams_to_write[bigram] = bigram_counts[bigram]
+        ngrams_to_write[ngram] = ngram_counts[ngram]
     # bigrams_sorted = tuples_to_strings(bigrams_sorted)
-    bigrams_to_write_str = tuples_to_strings(bigrams_to_write)
+    ngrams_to_write_str = tuples_to_strings(ngrams_to_write)
     # bigrams_sorted = sorted(bigrams_to_write_str, key=bigrams_to_write_str.get, reverse=True)
-    if len(bigrams_to_write_str) > 30:  # ensures only MPs with sufficient data have their counts recorded TODO tweak
-        with open("output/bigram_counts/" + filename, "w") as file:
-            json.dump(bigrams_to_write_str, file)
+    if len(ngrams_to_write_str) > 30:  # ensures only MPs with sufficient data have their counts recorded TODO tweak
+        with open(filename[1:], "w") as file:  # "filename" uses directory with opening '/' so removed here
+            json.dump(ngrams_to_write_str, file)
 
 
-def build_bigram_count_files():
-    main.clear_directory_files(os.getcwd() + "/output/bigram_counts")
+# def build_count_files(path):
+#     main.clear_directory_files(path)
+#
+#     cont_path = os.getcwd() + "output/MP_contributions"
+
+
+def build_count_files(model_type):
+    directory = ""
+    match model_type:
+        case "bigram":
+            directory = "/output/bigram_counts"
+            main.clear_directory_files(os.getcwd() + directory)
+        case "trigram":
+            directory = "/output/trigram_counts"
+            main.clear_directory_files(os.getcwd() + directory)
 
     cont_path = os.getcwd() + "/output/MP_contributions/"
     for cont_file in os.listdir(cont_path):
-        print(cont_file) #todo remove
+        print(cont_file)  # todo remove
         f = open(cont_path + cont_file)
         contributions = json.load(f)
-        bigram_counts = {}
+        ngram_counts = {}
         for c in contributions:
-            bigram_counts = count_bigrams(c, bigram_counts)
+            ngram_counts = count_ngrams(c, ngram_counts, model_type)
 
-        write_counts_to_json(bigram_counts, cont_file)
+        write_counts_to_json(ngram_counts, directory + '/' + cont_file, model_type)
 
 
 # TODO only store bigrams that appear more than n times
@@ -152,18 +200,18 @@ def build_bigram_count_files():
 #     # bigram_counts = model.count_bigrams(preprocessed, bigram_counts)
 
 
-def array_from_dict(bigram_counts):
-    # Get indices from keys
-    row_indices = list(set([k[0] for k in bigram_counts.keys()]))
-    col_indices = list(set([k[1] for k in bigram_counts.keys()]))
-
-    # Create a 2D PyTorch tensor
-    tensor_bigrams = torch.zeros(len(row_indices), len(col_indices))
-
-    # Fill in tensor with vals from bigram_counts
-    for key, val in bigram_counts.items():
-        row_index = row_indices.index(key[0])
-        col_index = col_indices.index(key[1])
-        tensor_bigrams[row_index, col_index] = val
-
-    return tensor_bigrams
+# def array_from_dict(bigram_counts):
+#     # Get indices from keys
+#     row_indices = list(set([k[0] for k in bigram_counts.keys()]))
+#     col_indices = list(set([k[1] for k in bigram_counts.keys()]))
+#
+#     # Create a 2D PyTorch tensor
+#     tensor_bigrams = torch.zeros(len(row_indices), len(col_indices))
+#
+#     # Fill in tensor with vals from bigram_counts
+#     for key, val in bigram_counts.items():
+#         row_index = row_indices.index(key[0])
+#         col_index = col_indices.index(key[1])
+#         tensor_bigrams[row_index, col_index] = val
+#
+#     return tensor_bigrams

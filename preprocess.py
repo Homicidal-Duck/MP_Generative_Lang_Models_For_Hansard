@@ -99,12 +99,17 @@ def clear_contribution_files():
 
 
 def write_contributions_to_file(contributions):
-    clear_contribution_files()
+    clear_contribution_files()  # todo fix
+    all_contributions = [""]
 
     for name, contribution_list in contributions.items():
         if len(name.split()) < 13 and len(contribution_list) > 2:
+            all_contributions[0] += (" " + ' '.join(contribution_list[1:]))
             with open("output/MP_contributions/" + name + ".json", "w") as file:
                 json.dump(contribution_list, file)
+
+    with open("output/MP_contributions/all.json", "w") as file:
+        json.dump(all_contributions, file)
 
 
 def append_contribution_to_dict(mp_name, mp_contribution, contributions):
@@ -206,7 +211,7 @@ def load_from_xml():
 
     for xml_file in os.listdir(os.getcwd() + "/xml"):
         all_files.append(xml_file)
-    #
+
     # for xml_file in os.listdir(os.getcwd() + "/xml_test"):
     #     all_files.append(xml_file)
     # debug mode - fewer files to iterate through. todo add debug mode already good heavens

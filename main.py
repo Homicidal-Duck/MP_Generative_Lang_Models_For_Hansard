@@ -12,72 +12,154 @@ def clear_directory_files(path):
         os.remove(path + "/" + file)
 
 
-def generate_text(model_dict_str):
-    start = time.perf_counter()
-    model_dict = model.strings_to_tuples(model_dict_str)
-    model_dict_2d = model.dict2D_from_dict(model_dict)
-    model_dict_2d = model.normalise_counts_2d(model_dict_2d)  # TODO MAKE WORK LOL
-    # print(model_dict_2d)
+# def weighted_random(max_val):  # todo change randomness to correspond to normalised values
+#     randomised = random.random()
+#     for i in range(0, max_val):
+#         if randomised < 1 / (2 ** (i + 1)):
+#             return i
 
-    num_sentences = random.randint(1, 1)  # randomises the number of sentences to print
+
+def weighted_random(word_list):
+    randomised = random.random()
+    val_sum = 0.0
+    num_checks = 0
+    for word, val in word_list.items():
+        val_sum += val
+        if word != "<cs>":  # doesn't allow "start contribution" tags to be used when building sentences
+            if val_sum >= randomised:
+                return word
+            if num_checks > 10:
+                return word_list.keys()[random.randint(1, len(word_list))]
+
+
+# TODO adjust generation of "all" such that <cs> is not preceded by anything upon generation
+# TODO add "enter own prompt" with checking for valid prompts (i.e. - present in list and of the right length)
+def generate_text_3d(model_dict_nd, prev_word):
+    prev_token_pair = prev_word.split()
+    # if len(prev_token_pair) == 1:
+    #     # if only one word is entered, guess the next to have a bigram to work from
+    #     # prev_token_pair.append(generate_text_2d(model_dict_nd, prev_word))
+    #     prev_token_pair.append(weighted_random(model_dict_nd[prev_word]))
+    # navigates 3D dictionary based on past two words
+    next_word_list = model_dict_nd[prev_token_pair[0]][prev_token_pair[1]]
+    next_word = weighted_random(next_word_list)
+    # next_bigram = list(prev_token_pair[1]).append(list(next_word_list.keys())[next_word_index])
+    next_bigram = prev_token_pair[1] + " " + next_word
+    return next_bigram
+
+
+def generate_text_2d(model_dict_nd, prev_word):
+    next_word_list = model_dict_nd[prev_word]
+    # get an index for the next word to print at random from most likely candidates
+    # next_word = weighted_random(next_word_list)
+    # next_word_index = random.randint(0, min(4, len(next_word_list) - 1))  # TODO test with weighted_random
+    return weighted_random(next_word_list)
+
+
+def retrieve_prompt(model_type):  # TODO add check for if word can be found? maybe at model runtime
+    invalid_input = True
+    while invalid_input:
+        prompt = input("Please enter a start prompt (Note: \"<cs>\" denotes \"start of contribution\")\n> ")
+        if prompt:
+            if model_type == "bigram":
+                prompt = prompt.split()[-1]
+                invalid_input = False
+            if model_type == "trigram" and len(prompt.split()) > 1:
+                prompt = ' '.join(prompt.split()[-2:])
+                invalid_input = False
+
+    return prompt
+
+
+def generate_text(model_dict_str, model_type):
+    model_dict = model.strings_to_tuples(model_dict_str)
+    match model_type:
+        case "bigram":
+            model_dict_nd = model.dict2D_from_dict(model_dict)
+            model_dict_nd = model.normalise_counts_2d(model_dict_nd)
+            generate_funct = generate_text_2d
+        case "trigram":
+            model_dict_nd = model.dict3D_from_dict(model_dict)
+            model_dict_nd = model.normalise_counts_3d(model_dict_nd)
+            generate_funct = generate_text_3d
+
+    num_sentences = random.randint(1, 4)  # randomises the number of sentences to print
     sentences_printed = 0
-    prev_word = "<cs>"
+    prompt = retrieve_prompt(model_type)
+    prev_token = prompt
+    # prev_token = "<cs>"  # Assumes starting prompt of "start of contribution" TODO allow user to enter
     to_print = ""
     while sentences_printed != num_sentences:
-        next_word_list = model_dict_2d[prev_word]
-        next_word_index = random.randint(0, min(4, len(next_word_list) - 1))
-        next_word = list(next_word_list.keys())[next_word_index]
+        next_token = generate_funct(model_dict_nd, prev_token)
+        print_next_word = next_token.split()[-1]  # To ensure the last word is printed and not full trigrams each time
 
-        if next_word != "<e>" and next_word != "<s>":
-            to_print += " " + next_word
-        elif next_word == "<e>":
+        if print_next_word != "<e>" and print_next_word != "<s>":  # special cases - tags should not be printed
+            to_print += " " + print_next_word
+        elif "<e>" in next_token:
             to_print += "."
             sentences_printed += 1
-        prev_word = next_word
-    print(to_print)
-    end = time.perf_counter()
-    print(f"generated in {end - start:0.4f} seconds")
+        prev_token = next_token
+    print(prompt + to_print)
 
-def run_model():
 
+def run_model(model_type):  # TODO investigate double full stop ..
     invalid_choice = True
     while invalid_choice:
         mp = (input("Enter an MP to generate text\n> ") + ".json").lower()
         # model_path = os.getcwd() + "/output/normalised_counts/" + mp pre-normalised
-        model_path = os.getcwd() + "/output/bigram_counts/" + mp  # normalised at runtime
+
+        match model_type:
+            case 'bigram':
+                model_path = os.getcwd() + "/output/bigram_counts/" + mp
+            case 'trigram':
+                model_path = os.getcwd() + "/output/trigram_counts/" + mp
+            # each normalised at runtime
         if os.path.exists(model_path):
             invalid_choice = False
             f = open(model_path)
             model_dict_str = json.load(f)
-            generate_text(model_dict_str)
+            generate_text(model_dict_str, model_type)
 
 
 def run_menu():
-    invalid_choice = True
-    while invalid_choice:
-        choice = input("\nPlease select an option:\n"
+    reprint_menu = True
+    model_type = "bigram"
+    model_index = 0
+    models = ["bigram", "trigram", "neural_network"]
+    while reprint_menu:
+        choice = input("-------------------------\n"
+                       f"Current model: {model_type}\n"
+                       "-------------------------\n"
+                       "Please select an option:\n"  # TODO rework for trigram model
                        "1) Load MP contributions from XML\n"
-                       "2) Get bigram counts\n"
+                       "2) Get ngram counts\n"
                        "3) Normalise bigram_counts\n"
                        "4) Run model\n"
                        "q) Quit\n\n"
                        "> ")
-        invalid_choice = False
+        reprint_menu = False
         start = time.perf_counter()
         match choice.lower():
+            case '0':
+                model_index = (model_index + 1) % 2
+                model_type = models[model_index]
+                reprint_menu = True
             case '1':
                 preprocess.load_from_xml()
             case '2':
-                model.build_bigram_count_files()
+                if model_type == "neural network":
+                    print("\nCannot run this for a neural network model")
+                else:
+                    model.build_count_files(model_type)
             case '3':
                 model.build_normalised_files()
             case '4':
-                run_model()
+                run_model(model_type)
             case 'q':
                 print("quitting...")
                 # not an invalid choice
             case _:
-                invalid_choice = True
+                reprint_menu = True
 
     end = time.perf_counter()
     print(f"{end - start:0.4f} seconds")
@@ -91,6 +173,7 @@ def run_menu():
 
 
 def main():
+    time.sleep(1)
     run_menu()
 
     # all_files = []
@@ -119,7 +202,7 @@ def main():
     #
     # write_contributions_to_file(contributions)
 
-    # Build 2D dictionary TODO THIS ONE
+    # Build 2D dictionary
     # bigram_2D_dict = model.dict2D_from_dict(bigram_counts)
     # print(bigram_2D_dict)
 
