@@ -1,5 +1,6 @@
 import nltk
 # import torch
+import random
 import json
 import os
 
@@ -27,41 +28,17 @@ def count_ngrams(string, ngram_counts, model_type):
     return ngram_counts
 
 
-def dict3D_from_dict(trigram_counts):
-    trigram_3D_dict = {}
-    trigrams_sorted = sorted(trigram_counts, key=trigram_counts.get, reverse=True)
-    for trigram in trigrams_sorted:
-        trigram_3D_dict.update({trigram[0]: dict()})
-
-    for trigram in trigrams_sorted:
-        trigram_3D_dict.get(trigram[0]).update({trigram[1]: dict()})
-
-    for trigram in trigrams_sorted:
-        count = trigram_counts.get(trigram)
-        # first_dict = trigram_3D_dict.get(trigram[0])
-        # second_dict = first_dict.get(trigram[1])
-        # second_dict.update({trigram[2]: count})
-        trigram_3D_dict.get(trigram[0]).get(trigram[1]).update({trigram[2]: count})
-
-    return trigram_3D_dict
-
-
-def dict2D_from_dict(bigram_counts):
-    # for bigram in bigram_counts.items():
-    #     print(bigram[0][0])
-    #       bigram[0][0]
-
-    bigram_2D_dict = {}
-    bigrams_sorted = sorted(bigram_counts, key=bigram_counts.get, reverse=True)
-    for bigram in bigrams_sorted:
-        bigram_2D_dict.update({bigram[0]: dict()})  # initialise dictionaries
-
-    for bigram in bigrams_sorted:
-        count = bigram_counts.get(bigram)
-        bigram_2D_dict.get(bigram[0]).update({bigram[1]: count})  # set value
-
-    return bigram_2D_dict
-    # input()
+def weighted_random(word_list):
+    randomised = random.random()
+    val_sum = 0.0
+    num_checks = 0
+    for word, val in word_list.items():
+        val_sum += val
+        if word != "<cs>":  # doesn't allow "start contribution" tags to be used when building sentences
+            if val_sum >= randomised:
+                return word
+            if num_checks > 10:
+                return word_list.keys()[random.randint(1, len(word_list))]
 
 
 # def array_from_dict(bigram_2D_dict, bigram_counts):
@@ -100,34 +77,6 @@ def normalise_counts(ngram_counts):
         normalised_counts[ngram] = count / sum  # get proportion of each value
 
     return normalised_counts
-
-
-def normalise_counts_3d(counts_3d):
-    normalised_counts_3d = {}
-    for first_word, first_word_dict in counts_3d.items():
-        normalised_counts_3d[first_word] = first_word_dict
-        for second_word, second_word_dict in first_word_dict.items():
-            normalised_counts_3d[first_word][second_word] = normalise_counts(second_word_dict)
-
-    return normalised_counts_3d
-
-
-def normalise_counts_2d(counts_2d):
-    # sum = 0
-    # for word_dict in counts_2d.values():
-    #
-    #     for count in list.values():
-    #         sum += count  # get sum of all values
-    #
-    #         normalised_counts = {}
-    #     for bigram, count in list.items():
-    #         normalised_counts[bigram] = count / sum  # get proportion of each value
-
-    normalised_counts_2d = {}
-    for first_word, word_dict in counts_2d.items():
-        normalised_counts_2d[first_word] = normalise_counts(word_dict)
-
-    return normalised_counts_2d
 
 
 def build_normalised_files():  # Unnecessary? Don't think I'll use this

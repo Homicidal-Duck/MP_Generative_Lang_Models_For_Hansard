@@ -1,10 +1,12 @@
 import os
 import random
 import time
+import json
 
 import preprocess
+import trigram
 import model
-import json
+import bigram
 
 
 def clear_directory_files(path):
@@ -19,43 +21,6 @@ def clear_directory_files(path):
 #             return i
 
 
-def weighted_random(word_list):
-    randomised = random.random()
-    val_sum = 0.0
-    num_checks = 0
-    for word, val in word_list.items():
-        val_sum += val
-        if word != "<cs>":  # doesn't allow "start contribution" tags to be used when building sentences
-            if val_sum >= randomised:
-                return word
-            if num_checks > 10:
-                return word_list.keys()[random.randint(1, len(word_list))]
-
-
-# TODO adjust generation of "all" such that <cs> is not preceded by anything upon generation
-# TODO add "enter own prompt" with checking for valid prompts (i.e. - present in list and of the right length)
-def generate_text_3d(model_dict_nd, prev_word):
-    prev_token_pair = prev_word.split()
-    # if len(prev_token_pair) == 1:
-    #     # if only one word is entered, guess the next to have a bigram to work from
-    #     # prev_token_pair.append(generate_text_2d(model_dict_nd, prev_word))
-    #     prev_token_pair.append(weighted_random(model_dict_nd[prev_word]))
-    # navigates 3D dictionary based on past two words
-    next_word_list = model_dict_nd[prev_token_pair[0]][prev_token_pair[1]]
-    next_word = weighted_random(next_word_list)
-    # next_bigram = list(prev_token_pair[1]).append(list(next_word_list.keys())[next_word_index])
-    next_bigram = prev_token_pair[1] + " " + next_word
-    return next_bigram
-
-
-def generate_text_2d(model_dict_nd, prev_word):
-    next_word_list = model_dict_nd[prev_word]
-    # get an index for the next word to print at random from most likely candidates
-    # next_word = weighted_random(next_word_list)
-    # next_word_index = random.randint(0, min(4, len(next_word_list) - 1))  # TODO test with weighted_random
-    return weighted_random(next_word_list)
-
-
 def retrieve_prompt(model_type):  # TODO add check for if word can be found? maybe at model runtime
     invalid_input = True
     while invalid_input:
@@ -64,33 +29,27 @@ def retrieve_prompt(model_type):  # TODO add check for if word can be found? may
             if model_type == "bigram":
                 prompt = prompt.split()[-1]
                 invalid_input = False
-            if model_type == "trigram" and len(prompt.split()) > 1:
-                prompt = ' '.join(prompt.split()[-2:])
-                invalid_input = False
+            if model_type == "trigram":
+                if len(prompt.split()) > 1:
+                    prompt = ' '.join(prompt.split()[-2:])
+                    invalid_input = False
+                else:
+                    print("\nINVALID INPUT: \"" + prompt + "\". Please enter at least two words.\n")
 
     return prompt
 
 
-def generate_text(model_dict_str, model_type):
-    model_dict = model.strings_to_tuples(model_dict_str)
-    match model_type:
-        case "bigram":
-            model_dict_nd = model.dict2D_from_dict(model_dict)
-            model_dict_nd = model.normalise_counts_2d(model_dict_nd)
-            generate_funct = generate_text_2d
-        case "trigram":
-            model_dict_nd = model.dict3D_from_dict(model_dict)
-            model_dict_nd = model.normalise_counts_3d(model_dict_nd)
-            generate_funct = generate_text_3d
-
+def generate_text(generate_funct, prompt, model_dict_nd):
     num_sentences = random.randint(1, 4)  # randomises the number of sentences to print
     sentences_printed = 0
-    prompt = retrieve_prompt(model_type)
     prev_token = prompt
-    # prev_token = "<cs>"  # Assumes starting prompt of "start of contribution" TODO allow user to enter
+
     to_print = ""
     while sentences_printed != num_sentences:
         next_token = generate_funct(model_dict_nd, prev_token)
+
+        print("\n\"" + prompt + " is not a valid start token. Please enter a word present in the dataset")
+        run_menu()
         print_next_word = next_token.split()[-1]  # To ensure the last word is printed and not full trigrams each time
 
         if print_next_word != "<e>" and print_next_word != "<s>":  # special cases - tags should not be printed
@@ -102,11 +61,30 @@ def generate_text(model_dict_str, model_type):
     print(prompt + to_print)
 
 
+def init_model(model_dict_str, model_type):
+    model_dict = model.strings_to_tuples(model_dict_str)
+    match model_type:
+        case "bigram":
+            model_dict_nd = bigram.dict2d_from_dict(model_dict)
+            model_dict_nd = bigram.normalise_counts_2d(model_dict_nd)
+            generate_funct = bigram.generate_text_2d  # function to be used set based on
+        case "trigram":
+            model_dict_nd = trigram.dict3d_from_dict(model_dict)
+            model_dict_nd = trigram.normalise_counts_3d(model_dict_nd)
+            generate_funct = trigram.generate_text_3d
+
+    prompt = retrieve_prompt(model_type)
+    try:
+        generate_text(generate_funct, prompt, model_dict_nd)
+    except KeyError:
+        print("\n" + prompt + " is not a valid prompt")
+        run_menu()
+
+
 def run_model(model_type):  # TODO investigate double full stop ..
     invalid_choice = True
     while invalid_choice:
         mp = (input("Enter an MP to generate text\n> ") + ".json").lower()
-        # model_path = os.getcwd() + "/output/normalised_counts/" + mp pre-normalised
 
         match model_type:
             case 'bigram':
@@ -118,7 +96,7 @@ def run_model(model_type):  # TODO investigate double full stop ..
             invalid_choice = False
             f = open(model_path)
             model_dict_str = json.load(f)
-            generate_text(model_dict_str, model_type)
+            init_model(model_dict_str, model_type)
 
 
 def run_menu():
@@ -164,13 +142,6 @@ def run_menu():
 
     end = time.perf_counter()
     print(f"{end - start:0.4f} seconds")
-
-
-# def write_contributions_to_file(contributions):
-#     for name, contribution_list in contributions.items():
-#         if len(name.split()) < 13 and len(contribution_list) > 2:
-#             with open("output/MP_contributions/" + name + ".json", "w") as file:
-#                 json.dump(contribution_list, file)
 
 
 def main():
@@ -220,8 +191,6 @@ def main():
     # for w in sorted(bigram_counts, key=bigram_counts.get, reverse=True):
     #     if(bigram_counts[w] > 3):
     #     #         bigram_count_file.write(str(w) + ' : ' + str(bigram_counts[w]) + '\n')
-
-
 
 
 if __name__ == '__main__':
