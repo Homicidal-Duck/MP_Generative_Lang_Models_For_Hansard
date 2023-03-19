@@ -14,17 +14,17 @@ def clear_directory_files(path):
         os.remove(path + "/" + file)
 
 
-# def weighted_random(max_val):  # todo change randomness to correspond to normalised values
+# def weighted_random(max_val):
 #     randomised = random.random()
 #     for i in range(0, max_val):
 #         if randomised < 1 / (2 ** (i + 1)):
 #             return i
 
 
-def retrieve_prompt(model_type):  # TODO add check for if word can be found? maybe at model runtime
+def retrieve_prompt(model_type):  # TODO add suggestion generation?
     invalid_input = True
     while invalid_input:
-        prompt = input("Please enter a start prompt (Note: \"<cs>\" denotes \"start of contribution\")\n> ")
+        prompt = input("Please enter a start prompt or enter \'q\' to quit (Note: \"<cs>\" denotes \"start of contribution\")\n> ")
         if prompt:
             if model_type == "bigram":
                 prompt = prompt.split()[-1]
@@ -48,16 +48,15 @@ def generate_text(generate_funct, prompt, model_dict_nd):
     while sentences_printed != num_sentences:
         next_token = generate_funct(model_dict_nd, prev_token)
 
-
         print_next_word = next_token.split()[-1]  # To ensure the last word is printed and not full trigrams each time
 
         if print_next_word != "<e>" and print_next_word != "<s>":  # special cases - tags should not be printed
             to_print += " " + print_next_word
-        elif "<e>" in next_token:
+        elif next_token.split()[0] == "<e>":
             to_print += "."
             sentences_printed += 1
         prev_token = next_token
-    print(prompt + to_print)
+    print("\n" + prompt + to_print + "\n")
 
 
 def init_model(model_dict_str, model_type):
@@ -69,18 +68,18 @@ def init_model(model_dict_str, model_type):
             generate_funct = bigram.generate_text_2d  # function to be used set based on
         case "trigram":
             model_dict_nd = trigram.dict3d_from_dict(model_dict)
-            model_dict_nd = trigram.normalise_counts_3d(model_dict_nd)  # TODO allow this step to be redone -
-                                                        # todo waiting for "all" to load every time is a pain
-
-                                                        # todo allow to repeat over same generated dict
+            model_dict_nd = trigram.normalise_counts_3d(model_dict_nd)
             generate_funct = trigram.generate_text_3d
 
-    prompt = retrieve_prompt(model_type)
-    try:
-        generate_text(generate_funct, prompt, model_dict_nd)
-    except KeyError:
-        print("\n" + prompt + " is not a valid prompt")
-        run_menu()
+    prompt = ""
+    while prompt != "q":
+        prompt = retrieve_prompt(model_type)
+        if prompt != "q":
+            try:
+                generate_text(generate_funct, prompt, model_dict_nd)
+            except KeyError:
+                print("\n" + prompt + " is not a valid prompt")
+    run_menu()
 
 
 def run_model(model_type):  # TODO investigate double full stop ..

@@ -11,7 +11,7 @@ nltk.download('punkt')
 
 def tokenise(string):
     extra_abbreviations = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r',
-                           's', 't', 'u', 'v', 'w', 'x', 'y', 'z', 'hon', 'gent', 'vol', 'col', 'esq', 'rt']
+                           's', 't', 'u', 'v', 'w', 'x', 'y', 'z', 'hon', 'gent', 'vol', 'col', 'esq', 'rt', 'nos']
     # Text often followed by a full stop that does not denote the end of the sentence
 
     tokeniser = nltk.data.load('tokenizers/punkt/english.pickle')
@@ -99,7 +99,7 @@ def clear_contribution_files():
 
 
 def write_contributions_to_file(contributions):
-    clear_contribution_files()  # todo fix
+    clear_contribution_files()
     all_contributions = [""]
 
     for name, contribution_list in contributions.items():

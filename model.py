@@ -30,6 +30,9 @@ def count_ngrams(string, ngram_counts, model_type):
 
 def weighted_random(word_list):
     randomised = random.random()
+
+    # randomised = 0.5 #TODO REMOVE!!!
+
     val_sum = 0.0
     num_checks = 0
     for word, val in word_list.items():
@@ -38,7 +41,12 @@ def weighted_random(word_list):
             if val_sum >= randomised:
                 return word
             if num_checks > 10:
-                return word_list.keys()[random.randint(1, len(word_list))]
+                return list(word_list.keys())[random.randint(9, len(word_list) - 1)]
+        else:
+            while word == "<cs>":
+                word = list(word_list.keys())[random.randint(0, len(word_list) - 1)]
+            return word
+
 
 
 # def array_from_dict(bigram_2D_dict, bigram_counts):
