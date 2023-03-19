@@ -48,8 +48,7 @@ def generate_text(generate_funct, prompt, model_dict_nd):
     while sentences_printed != num_sentences:
         next_token = generate_funct(model_dict_nd, prev_token)
 
-        print("\n\"" + prompt + " is not a valid start token. Please enter a word present in the dataset")
-        run_menu()
+
         print_next_word = next_token.split()[-1]  # To ensure the last word is printed and not full trigrams each time
 
         if print_next_word != "<e>" and print_next_word != "<s>":  # special cases - tags should not be printed
@@ -70,7 +69,10 @@ def init_model(model_dict_str, model_type):
             generate_funct = bigram.generate_text_2d  # function to be used set based on
         case "trigram":
             model_dict_nd = trigram.dict3d_from_dict(model_dict)
-            model_dict_nd = trigram.normalise_counts_3d(model_dict_nd)
+            model_dict_nd = trigram.normalise_counts_3d(model_dict_nd)  # TODO allow this step to be redone -
+                                                        # todo waiting for "all" to load every time is a pain
+
+                                                        # todo allow to repeat over same generated dict
             generate_funct = trigram.generate_text_3d
 
     prompt = retrieve_prompt(model_type)
